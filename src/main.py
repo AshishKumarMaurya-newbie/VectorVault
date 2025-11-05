@@ -13,6 +13,7 @@ import crud, models, schemas, security
 from database import engine, get_db, settings, SessionLocal
 from monitoring import MetricsMiddleware, MetricsCollector, HealthCheck
 
+from tasks import create_hello_world_task
 # --- NEW: Lifespan Event Handler ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -130,3 +131,21 @@ def health(db: Session = Depends(get_db)):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Database connection error: {e}"
         )
+
+
+# --- 5. Asynchronous Task Endpoint (NEW) ---
+
+@app.post("/test-task")
+def test_background_task():
+    """
+    Endpoint to trigger a new 10-second background task.
+    """
+    print("Received request to start test task...")
+    
+    # This is the key!
+    # .delay() sends the job to Celery and returns immediately.
+    create_hello_world_task.delay("Hello from the API!")
+    
+    print("Task was sent to the background worker. Returning response.")
+    
+    return {"message": "Task has been started in the background!"}
