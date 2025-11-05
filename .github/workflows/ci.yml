@@ -55,55 +55,50 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      # --- Step 4: List files (FOR DEBUGGING) ---
-      # This will show us exactly what files are in the directory.
-      - name: List files in workspace
-        run: |
-          echo "Listing all files in the current directory..."
-          ls -laR
-
-      # --- Step 5: Run Alembic Migrations ---
+      # --- Step 4: Run Alembic Migrations ---
       - name: Run database migrations
         env:
-          # --- Environment Variables for Alembic ---
-          # This is the section you asked about.
-          # It needs ALL variables because it imports 'database.py'
-          
-          # Database
           POSTGRES_USER: vectorvault
           POSTGRES_PASSWORD: mysecretpassword
           POSTGRES_DB: vectorvault_db
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
-
-          # Redis
           CELERY_BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
-          
-          # App Secrets
           SECRET_KEY: 09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
           ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
         run: alembic upgrade head
 
-      # --- Step 6: Run Pytest ---
-      - name: Run Pytest
+      # --- Step 5: Run API Server in Background (NEW!) ---
+      - name: Run API Server in Background
         env:
-          # --- Environment Variables for Pytest ---
-          # Pytest runs against the app, so it needs all the same variables.
-
-          # Database
           POSTGRES_USER: vectorvault
           POSTGRES_PASSWORD: mysecretpassword
           POSTGRES_DB: vectorvault_db
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
-
-          # Redis
           CELERY_BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
-          
-          # App Secrets
+          SECRET_KEY: 09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+        run: |
+          # Run uvicorn in the background using '&'
+          uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+          # Wait 5 seconds to give the server time to start
+          sleep 5
+
+      # --- Step 6: Run Pytest ---
+      - name: Run Pytest
+        env:
+          POSTGRES_USER: vectorvault
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: vectorvault_db
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          CELERY_RESULT_BACKEND: redis://localhost:6379/0
           SECRET_KEY: 09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
           ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
