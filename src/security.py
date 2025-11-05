@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-import crud, models, schemas  # <-- Fixed import
-from database import get_db, settings  # <-- Fixed import
+import crud, models, schemas
+from database import get_db, settings
 
 # --- Password Hashing Setup ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -39,16 +39,18 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 # --- User Authentication & Authorization ---
-def authenticate_user(db: Session, username: str, password: str) -> models.User | bool:
+def authenticate_user(db: Session, username: str, password: str) -> models.User | None:
     """
     Check if a user exists and the password is correct.
-    Returns the user object if successful, False otherwise.
+    Returns the user object if successful, None otherwise.
     """
     user = crud.get_user_by_username(db, username=username)
     if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
+        return None
+    
+    # --- FIX 1: Silences the "Column[str]" false positive ---
+    if not verify_password(password, user.hashed_password): # type: ignore
+        return None
     return user
 
 def get_current_user(
@@ -70,14 +72,24 @@ def get_current_user(
             settings.SECRET_KEY, 
             algorithms=[settings.ALGORITHM]
         )
-        username: str = payload.get("sub")
+        
+        # --- FIX 2: Handle potential 'None' from payload.get() ---
+        username: str | None = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = schemas.TokenData(username=username)
+        # --- End Fix ---
+        
     except JWTError:
         raise credentials_exception
     
+    # --- FIX 3: Handle potential 'None' from token_data ---
+    if token_data.username is None:
+        raise credentials_exception
+        
     user = crud.get_user_by_username(db, username=token_data.username)
+    # --- End Fix ---
+    
     if user is None:
         raise credentials_exception
     return user
@@ -89,7 +101,9 @@ def get_current_active_user(
     Check if the current user is active.
     This is a dependency that builds on get_current_user.
     """
-    if not current_user.is_active:
+    
+    # --- FIX 4: Silences the "Column[bool]" false positive ---
+    if not current_user.is_active: # type: ignore
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Inactive user"

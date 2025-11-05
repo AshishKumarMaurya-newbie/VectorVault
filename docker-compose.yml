@@ -5,15 +5,28 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./src:/app
-      - ./alembic:/app/alembic  # <-- NEW: Mount alembic folder too
+      # --- CHANGE 1: Add all three mounts ---
+      - ./src:/app         # Mount your Python code
+      - ./alembic:/app/alembic   # Mount your migrations folder
+      - ./alembic.ini:/app/alembic.ini # Mount your config file
     env_file:
       - .env
     depends_on:
       db:
         condition: service_healthy
-      redis:  # <-- NEW: Make API wait for Redis too
+      redis:
         condition: service_started
+    # --- CHANGE 2: Add this command block ---
+    # This runs migrations first, then starts the server.
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running database migrations...' &&
+        alembic upgrade head &&
+        echo 'Migrations complete. Starting FastAPI server...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000
+      "
 
   db:
     image: postgres:15-alpine
@@ -51,6 +64,8 @@ services:
     command: celery -A celery_worker.celery_app worker --loglevel=info
     volumes:
       - ./src:/app
+      - ./alembic:/app/alembic   # <-- ADD THIS
+      - ./alembic.ini:/app/alembic.ini # <-- ADD THIS
     env_file:
       - .env
     depends_on:
