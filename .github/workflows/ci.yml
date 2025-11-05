@@ -49,8 +49,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      # --- Step 3: Install System Dependencies (THE FIX) ---
-      # This is required to build the 'bcrypt' C-extensions
+      # --- Step 3: Install System Dependencies ---
       - name: Install System Dependencies
         run: |
           sudo apt-get update
@@ -60,7 +59,9 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # --- THE FIX IS HERE: --no-cache-dir ---
+          # This forces pip to ignore bad cached wheels and build bcrypt
+          pip install --no-cache-dir -r requirements.txt
       
       # --- Step 5: Run Alembic Migrations ---
       - name: Run database migrations
