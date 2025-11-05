@@ -1,19 +1,20 @@
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict  # <-- Import ConfigDict
+# We don't need to import ConfigDict
 
 class CelerySettings(BaseSettings):
     """Loads Celery-specific settings from .env."""
     
-    # --- ADD THIS ---
-    # This tells Pydantic to ignore any .env variables
-    # that we haven't defined in this class.
-    model_config = ConfigDict(extra='ignore')
-    # --- END ADD ---
+    # --- THIS IS THE FIX ---
+    # model_config should be a plain dictionary,
+    # not a ConfigDict() object.
+    model_config = {
+        "env_file": ".env",
+        "extra": "ignore"
+    }
+    # --- END FIX ---
 
     CELERY_BROKER_URL: str = "redis://redis:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://redis:6379/0"
 
-    class Config:
-        env_file = ".env"
 
 celery_settings = CelerySettings()

@@ -1,25 +1,28 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from sqlalchemy import text  # <-- FIX 1: Import text
+from sqlalchemy import text
 from datetime import timedelta
 import time
 from contextlib import asynccontextmanager
 import sqlalchemy.exc
 from typing import Annotated
 
+# --- NEW: Import for /metrics endpoint ---
+from fastapi.responses import PlainTextResponse
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+# ---
+
 # Import all your project modules
 import crud, models, schemas, security
 from database import engine, get_db, settings, SessionLocal
 from monitoring import MetricsMiddleware, MetricsCollector, HealthCheck
-
 from tasks import create_hello_world_task
-# --- NEW: Lifespan Event Handler ---
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Run on app startup and shutdown.
-    This is the perfect place to wait for the database.
     """
     print("--- THIS IS THE NEWEST VERSION ---")
     print("Application startup... Waiting for database...")
@@ -30,9 +33,8 @@ async def lifespan(app: FastAPI):
 
     for i in range(retries):
         try:
-            # Try to connect to the database
             db = SessionLocal()
-            db.execute(text("SELECT 1"))  # <-- FIX 2: Use text()
+            db.execute(text("SELECT 1"))
             db.close()
             db_ready = True
             print("✅ Database connected!")
@@ -45,9 +47,7 @@ async def lifespan(app: FastAPI):
         print("❌ Database connection failed after all retries. Shutting down.")
         raise Exception("Could not connect to database.")
 
-    # --- Create tables ---
-    print("Creating database tables...")
-    print("Database tables created.")
+    # We removed the create_all() line, Alembic handles this.
     
     yield
     
@@ -74,7 +74,6 @@ def login_for_access_token(
 ):
     """
     Standard OAuth2 login endpoint.
-    Takes username and password from a form body.
     """
     user = security.authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -122,9 +121,11 @@ def root():
 
 @app.get("/health")
 def health(db: Session = Depends(get_db)):
-    # This is a more realistic health check
+    """
+    A realistic health check that also checks database connectivity.
+    """
     try:
-        db.execute(text("SELECT 1"))  # <-- FIX 3: Use text() here as well
+        db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         raise HTTPException(
@@ -133,7 +134,7 @@ def health(db: Session = Depends(get_db)):
         )
 
 
-# --- 5. Asynchronous Task Endpoint (NEW) ---
+# --- 5. Asynchronous Task Endpoint ---
 
 @app.post("/test-task")
 def test_background_task():
@@ -141,11 +142,17 @@ def test_background_task():
     Endpoint to trigger a new 10-second background task.
     """
     print("Received request to start test task...")
-    
-    # This is the key!
-    # .delay() sends the job to Celery and returns immediately.
     create_hello_world_task.delay("Hello from the API!")
-    
     print("Task was sent to the background worker. Returning response.")
     
     return {"message": "Task has been started in the background!"}
+
+
+# --- 6. Prometheus Metrics Endpoint (NEW) ---
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def metrics():
+    """
+    Prometheus metrics endpoint.
+    """
+    return generate_latest()

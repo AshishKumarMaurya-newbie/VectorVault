@@ -25,3 +25,4 @@ chroma_db/
 .vscode/
 .idea/
 .pytest_cache/
+.dockerignore

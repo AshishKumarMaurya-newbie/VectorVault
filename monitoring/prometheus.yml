@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s # How often to scrape
+
+scrape_configs:
+  - job_name: 'vectorvault-api'
+    # This tells Prometheus how to find your API.
+    # 'vectorvault_api:8000' is the internal Docker DNS name and port.
+    static_configs:
+      - targets: ['vectorvault_api:8000']

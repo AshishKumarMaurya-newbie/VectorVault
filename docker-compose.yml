@@ -5,7 +5,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # --- CHANGED: Mount the entire project directory ---
       - .:/app
     env_file:
       - .env
@@ -14,7 +13,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    # --- CHANGED: Update command for new structure ---
     command: >
       sh -c "
         echo 'Waiting for database...' &&
@@ -55,15 +53,11 @@ services:
   celery_worker:
     build: .
     container_name: vectorvault_worker
-    # --- THIS IS THE FIX ---
-    # We cd into 'src' first, then run celery.
-    # The -A app path no longer needs 'src.'
     command: >
       sh -c "
         cd src &&
         celery -A celery_worker.celery_app worker --loglevel=info
       "
-    # --- END FIX ---
     volumes:
       - .:/app
     env_file:
@@ -73,5 +67,28 @@ services:
       - db
       - redis
 
+  # --- NEW: Prometheus Service ---
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: vectorvault_prometheus
+    ports:
+      - "9090:9090" # Access Prometheus on http://localhost:9090
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api
+
+  # --- NEW: Grafana Service ---
+  grafana:
+    image: grafana/grafana:10.1.5
+    container_name: vectorvault_grafana
+    ports:
+      - "3000:3000" # Access Grafana on http://localhost:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
+  grafana_data: # <-- NEW: Persistent volume for your dashboards
