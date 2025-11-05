@@ -49,7 +49,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      # --- Step 3: Install System Dependencies (NEW!) ---
+      # --- Step 3: Install System Dependencies (THE FIX) ---
       # This is required to build the 'bcrypt' C-extensions
       - name: Install System Dependencies
         run: |
