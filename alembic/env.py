@@ -1,8 +1,7 @@
 import os
 from logging.config import fileConfig
 
-# --- NEW: Fix Python Path ---
-# This adds your 'src' folder to the path so Alembic can find your models
+# --- CHANGED: This path fix now works in all environments ---
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
@@ -14,27 +13,23 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Import your models' Base
+# --- CHANGED: Import from 'src.' ---
 from models import Base
-
-# Import your settings to get the DB URL
 from database import settings
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
 # Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # --- CUSTOM CONFIG ---
-# Set the target metadata for 'autogenerate' support
 target_metadata = Base.metadata
 
 # Set the sqlalchemy.url from our .env settings
-# This overrides the alembic.ini
 db_url = URL.create(
     drivername="postgresql",
     username=settings.POSTGRES_USER,
@@ -81,6 +76,6 @@ def run_migrations_online() -> None:
 
 
 if context.is_offline_mode():
-    run_migrations_offline()
+    run_migrations_online()
 else:
     run_migrations_online()

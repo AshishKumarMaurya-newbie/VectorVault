@@ -5,10 +5,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # --- CHANGE 1: Add all three mounts ---
-      - ./src:/app         # Mount your Python code
-      - ./alembic:/app/alembic   # Mount your migrations folder
-      - ./alembic.ini:/app/alembic.ini # Mount your config file
+      # --- CHANGED: Mount the entire project directory ---
+      - .:/app
     env_file:
       - .env
     depends_on:
@@ -16,8 +14,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    # --- CHANGE 2: Add this command block ---
-    # This runs migrations first, then starts the server.
+    # --- CHANGED: Update command for new structure ---
     command: >
       sh -c "
         echo 'Waiting for database...' &&
@@ -25,6 +22,7 @@ services:
         echo 'Running database migrations...' &&
         alembic upgrade head &&
         echo 'Migrations complete. Starting FastAPI server...' &&
+        cd src &&
         uvicorn main:app --host 0.0.0.0 --port 8000
       "
 
@@ -43,8 +41,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- NEW: Redis Service ---
-  # This is the "Job Broker" that holds tasks for Celery.
   redis:
     image: redis:7-alpine
     container_name: vectorvault_redis
@@ -56,16 +52,14 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- NEW: Celery Worker Service ---
-  # This container just runs the worker process.
   celery_worker:
     build: .
     container_name: vectorvault_worker
-    command: celery -A celery_worker.celery_app worker --loglevel=info
+    # --- CHANGED: Add 'src.' prefix to worker path ---
+    command: celery -A src.celery_worker.celery_app worker --loglevel=info
     volumes:
-      - ./src:/app
-      - ./alembic:/app/alembic   # <-- ADD THIS
-      - ./alembic.ini:/app/alembic.ini # <-- ADD THIS
+      # --- CHANGED: Mount the entire project directory ---
+      - .:/app
     env_file:
       - .env
     depends_on:
