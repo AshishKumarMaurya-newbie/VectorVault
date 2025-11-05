@@ -1,24 +1,24 @@
 import os
 from logging.config import fileConfig
 
+# --- NEW: Fix Python Path ---
+# This adds your 'src' folder to the path so Alembic can find your models
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
+# --- End Path Fix ---
+
 from sqlalchemy import engine_from_config
 from sqlalchemy.engine import URL
 from sqlalchemy import pool
 
 from alembic import context
 
-# --- CUSTOM IMPORTS ---
-# Add your project's 'src' directory to the Python path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[1] / 'src'))
-
 # Import your models' Base
 from models import Base
 
 # Import your settings to get the DB URL
 from database import settings
-# --- END CUSTOM IMPORTS ---
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -49,7 +49,6 @@ config.set_main_option('sqlalchemy.url', db_url.render_as_string(hide_password=F
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
-    (This is less common)
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -65,7 +64,6 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
-    (This is what we will do)
     """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
