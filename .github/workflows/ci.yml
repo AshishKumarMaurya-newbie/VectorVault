@@ -49,13 +49,20 @@ jobs:
         with:
           python-version: '3.11'
 
-      # --- Step 3: Install Python Dependencies ---
+      # --- Step 3: Install System Dependencies (NEW!) ---
+      # This is required to build the 'bcrypt' C-extensions
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libffi-dev python3-dev
+
+      # --- Step 4: Install Python Dependencies ---
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      # --- Step 4: Run Alembic Migrations ---
+      # --- Step 5: Run Alembic Migrations ---
       - name: Run database migrations
         env:
           POSTGRES_USER: vectorvault
@@ -70,7 +77,7 @@ jobs:
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
         run: alembic upgrade head
 
-      # --- Step 5: Run API Server in Background (FIXED) ---
+      # --- Step 6: Run API Server in Background ---
       - name: Run API Server in Background
         env:
           POSTGRES_USER: vectorvault
@@ -84,17 +91,12 @@ jobs:
           ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
         run: |
-          # Change directory into the 'src' folder first
           cd src
-          # Now run uvicorn, targeting 'main:app'
-          # This fixes all the Python import paths
           uvicorn main:app --host 0.0.0.0 --port 8000 &
-          # Go back to the root
           cd ..
-          # Wait 5 seconds to give the server time to start
           sleep 5
 
-      # --- Step 6: Run Pytest ---
+      # --- Step 7: Run Pytest ---
       - name: Run Pytest
         env:
           POSTGRES_USER: vectorvault
