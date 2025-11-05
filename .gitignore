@@ -1,0 +1,37 @@
+# --- Secrets ---
+# This is the most important line.
+# Never commit your passwords and secret keys.
+.env
+
+# --- Virtual Environment ---
+# Ignore the entire virtual environment folder.
+.venv/
+venv/
+env/
+
+# --- Local Data ---
+# Ignore the local ChromaDB database folder created by your app.
+/chroma_db/
+
+# --- Python Cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# --- IDE / Editor ---
+# Ignore Visual Studio Code and PyCharm settings.
+.vscode/
+.idea/
+
+# --- Testing / Build Artifacts ---
+.pytest_cache/
+htmlcov/
+dist/
+build/
+
+# --- OS-specific files ---
+# Ignore Mac and Windows system files.
+.DS_Store
+Thumbs.db
