@@ -1,0 +1,27 @@
+# --- Docker Context Ignore ---
+
+# Ignore the Dockerfile itself
+Dockerfile
+docker-compose.yml
+
+# Ignore Git history
+.git/
+.gitignore
+
+# --- MOST IMPORTANT ---
+# Ignore the entire virtual environment
+.venv/
+venv/
+env/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore local databases
+chroma_db/
+
+# Ignore IDE settings and test cache
+.vscode/
+.idea/
+.pytest_cache/

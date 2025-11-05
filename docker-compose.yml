@@ -55,10 +55,16 @@ services:
   celery_worker:
     build: .
     container_name: vectorvault_worker
-    # --- CHANGED: Add 'src.' prefix to worker path ---
-    command: celery -A src.celery_worker.celery_app worker --loglevel=info
+    # --- THIS IS THE FIX ---
+    # We cd into 'src' first, then run celery.
+    # The -A app path no longer needs 'src.'
+    command: >
+      sh -c "
+        cd src &&
+        celery -A celery_worker.celery_app worker --loglevel=info
+      "
+    # --- END FIX ---
     volumes:
-      # --- CHANGED: Mount the entire project directory ---
       - .:/app
     env_file:
       - .env
