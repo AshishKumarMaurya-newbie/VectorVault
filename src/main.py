@@ -46,7 +46,6 @@ async def lifespan(app: FastAPI):
 
     # --- Create tables ---
     print("Creating database tables...")
-    models.Base.metadata.create_all(bind=engine)
     print("Database tables created.")
     
     yield
