@@ -47,17 +47,3 @@ This project runs as a 5-service application orchestrated by Docker Compose. The
 | **Testing** | Pytest, HTTPX |
 | **CI/CD** | GitHub Actions |
 
-## 🚀 Getting Started (Local Development)
-
-This entire 5-service application can be built and run with a single command.
-
-### Prerequisites
-
-* Docker
-* Docker Compose
-
-### 1. Clone the Repository
-
-```bash
-git clone [https://github.com/YOUR_USERNAME/VectorVault.git](https://github.com/YOUR_USERNAME/VectorVault.git)
-cd VectorVault
